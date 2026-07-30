@@ -141,7 +141,7 @@
 
   <div class="card" id="commentsCard">
     <h2>You've Been Asked to Review This Draft</h2>
-    <p class="hint">This is a working draft of the annual staff elder review conversation guide. The main way to give feedback: type directly into the "Your Feedback on This Question" box under any question. If you have a thought about something that isn't a specific question (the intro text, a section heading, etc.), you can also select that text and a small "💬 Comment" button will appear — click it to leave a note there instead; commented text gets a highlight you can click again to edit or delete. When you're done, enter your name below and click "Submit Feedback" — it's submitted directly, no email needed.</p>
+    <p class="hint">This is a working draft of the annual staff elder review conversation guide. The main way to give feedback: type directly into the "Your Feedback on This Question" box under any question. If you have a thought about something that isn't a specific question (the intro text, a section heading, etc.), you can also select that text and a small "💬 Comment" button will appear — click it to leave a note there instead; commented text gets a highlight you can click again to edit or delete. When you're done, enter your name below and click "Submit Feedback" — that's it, it goes straight to the pastor.</p>
     <label class="field"><span class="lbl">Your Name</span><input type="text" id="reviewerName" placeholder="So it's clear whose feedback this is"></label>
     <button class="add-btn" id="submitFeedbackBtn">Submit Feedback</button>
     <button class="add-btn" id="copyCommentsBtn" style="background:transparent; border:1px solid var(--line); color:var(--ink);">Copy All Feedback Instead</button>
@@ -451,9 +451,6 @@ function openCommentPopover(range, rect, existingMark) {
   }
 }
 
-const GITHUB_REPO = "AICrazyMan5000/gcc-staff-elder-annual-review-feedback";
-const GITHUB_TOKEN = "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"; // fine-grained PAT, scoped to only this repo, Issues: Read and write
-
 function readPerQuestionFeedback() {
   const items = [];
   document.querySelectorAll('.qblock').forEach(block => {
@@ -497,38 +494,27 @@ document.getElementById('submitFeedbackBtn').addEventListener('click', async () 
     statusEl.textContent = 'No feedback yet — type into at least one question\'s feedback box before submitting.';
     return;
   }
-  if (GITHUB_TOKEN === 'PASTE_TOKEN_HERE') {
-    statusEl.textContent = 'Submission isn\'t wired up yet — use "Copy All Comments Instead" for now.';
-    return;
-  }
   const submitBtn = document.getElementById('submitFeedbackBtn');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Submitting…';
   statusEl.textContent = '';
   try {
-    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
+    const res = await fetch('https://formsubmit.co/ajax/bholland@gcchsv.org', {
       method: 'POST',
-      headers: {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
-        title: `Feedback — ${name} — ${new Date().toISOString().slice(0,10)}`,
-        body: compiled
+        _subject: `Staff Elder Annual Review — Conversation Guide Feedback — ${name}`,
+        Name: name,
+        Feedback: compiled
       })
     });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`GitHub responded ${res.status}: ${errBody}`);
-    }
+    if (!res.ok) throw new Error('Request failed: ' + res.status);
     submitBtn.textContent = 'Submitted ✓';
     statusEl.textContent = 'Thank you — your feedback has been submitted.';
   } catch (err) {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Submit Feedback';
-    statusEl.textContent = 'Something went wrong submitting your feedback: ' + err.message + '. Please try "Copy All Comments Instead" and send it another way.';
+    statusEl.textContent = 'Something went wrong submitting this automatically. Please use "Copy All Feedback Instead" and send it another way.';
   }
 });
 
