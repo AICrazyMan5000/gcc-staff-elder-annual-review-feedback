@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GCC Elder Conversation Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f7f5f0; --card: #ffffff; --ink: #2b2a27; --sub: #6b6860;
+    --line: #ddd8cc; --accent: #6b5b3e; --accent-ink:#ffffff; --good:#15803d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#1c1b19; --card:#26241f; --ink:#ece8df; --sub:#b0aa9c; --line:#3c392f; --accent:#c8b27a; --accent-ink:#1c1b19; --good:#4ade80; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: "Iowan Old Style","Georgia",serif; line-height:1.5; }
+  .toolbar { position:sticky; top:0; z-index:10; background:var(--accent); color:var(--accent-ink); padding:10px 16px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .toolbar h1 { font-size:15px; margin:0 auto 0 0; font-weight:600; }
+  .toolbar button, .toolbar label.filebtn { background:rgba(255,255,255,.15); color:var(--accent-ink); border:1px solid rgba(255,255,255,.4); padding:7px 12px; border-radius:6px; font-size:13px; cursor:pointer; font-family:inherit; }
+  .toolbar button:hover, .toolbar label.filebtn:hover { background:rgba(255,255,255,.28); }
+  .toolbar input[type=file] { display:none; }
+  main { max-width:880px; margin:0 auto; padding:20px 16px 80px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 22px; margin-bottom:18px; }
+  .card h2 { margin:0 0 4px; font-size:19px; }
+  .card .hint { color:var(--sub); font-size:13px; margin:0 0 16px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  label.field { display:block; margin-bottom:12px; }
+  label.field .lbl { display:block; font-size:13px; color:var(--sub); margin-bottom:4px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  input[type=text], input[type=date], textarea, select {
+    width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--ink);
+    font-family:inherit; font-size:15px;
+  }
+  textarea { min-height:52px; resize:vertical; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+
+  details.category { border:1px solid var(--line); border-radius:10px; margin-bottom:14px; background:var(--card); overflow:hidden; }
+  details.category[open] summary { border-bottom:1px solid var(--line); }
+  details.category summary { cursor:pointer; padding:14px 18px; font-size:17px; font-weight:600; color:var(--accent); list-style:none; display:flex; justify-content:space-between; align-items:center; }
+  details.category summary::-webkit-details-marker { display:none; }
+  details.category summary::after { content:"+"; font-size:20px; color:var(--sub); }
+  details.category[open] summary::after { content:"–"; }
+  .category-body { padding:16px 18px; }
+  .category-hint { color:var(--sub); font-size:13px; margin:-6px 0 14px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+
+  .qblock { border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:12px; background:rgba(0,0,0,.02); }
+  .qblock .qtext { font-size:15.5px; margin-bottom:4px; }
+  .qblock .qnote { font-size:12.5px; color:var(--sub); font-style:italic; margin-bottom:10px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .qanswers { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .qanswers .lbl { font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--sub); margin-bottom:3px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+
+  .conv-row { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:end; margin-bottom:10px; }
+  .rm-btn, .add-btn { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:13px; cursor:pointer; border-radius:6px; }
+  .rm-btn { background:transparent; border:1px solid var(--line); color:var(--sub); padding:5px 10px; }
+  .add-btn { background:var(--accent); color:var(--accent-ink); border:none; padding:9px 14px; font-weight:600; }
+  .footnote { color:var(--sub); font-size:12.5px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+
+  mark.commented { background: rgba(181,138,46,.35); cursor:pointer; border-bottom:2px solid #b58a2e; padding:0 1px; }
+  @media (prefers-color-scheme: dark) { mark.commented { background: rgba(224,184,77,.35); border-bottom-color:#e0b84d; } }
+  #addCommentBtn { position:absolute; z-index:1000; background:var(--accent); color:var(--accent-ink); border:none; border-radius:6px; padding:6px 10px; font-size:12px; cursor:pointer; display:none; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .comment-popover { position:absolute; z-index:1001; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px; box-shadow:0 4px 16px rgba(0,0,0,.25); width:260px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:13px; }
+  .comment-popover textarea { width:100%; min-height:60px; margin-bottom:6px; font-family:inherit; font-size:13px; }
+  .comment-popover .btnrow { display:flex; gap:6px; justify-content:flex-end; }
+  .comment-popover button { font-size:12px; padding:5px 10px; border-radius:6px; cursor:pointer; }
+  #commentsCard { border:1px dashed #b58a2e; background:rgba(181,138,46,.06); }
+  #commentsOutput { display:none; margin-top:10px; min-height:120px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:13px; }
+
+  @media print {
+    .toolbar, .rm-btn, .add-btn, input[type=file], #addCommentBtn, .comment-popover, #commentsCard { display:none !important; }
+    mark.commented { background:none !important; border-bottom:none !important; }
+    body { background:#fff; }
+    .card, details.category { border:none; box-shadow:none; break-inside:avoid; }
+    details.category { display:block !important; }
+    details.category summary::after { content:""; }
+    main { max-width:100%; padding:0 6px; }
+  }
+  @media (max-width:600px) { .row2,.row3,.qanswers { grid-template-columns:1fr; } .conv-row { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>Elder Conversation Guide — Grace Community Church, Huntsville</h1>
+  <label class="filebtn">Load saved progress<input type="file" id="loadFile" accept="application/json"></label>
+  <button id="saveBtn">Download progress (.json)</button>
+  <button id="expandBtn">Expand All</button>
+  <button id="collapseBtn">Collapse All</button>
+  <button onclick="window.print()">Print / Save as PDF</button>
+</div>
+
+<main>
+
+  <div class="card">
+    <h2>What This Is & How It Works</h2>
+    <p class="hint">Every full-time staff member at GCC is also an elder, so this review holds two things together: his character and personal wellbeing, and how he's actually doing in each ministry he oversees. It's meant to be honest about growth areas — but just as intent on naming real strengths and fruit, not only cataloging what needs work. This particular document is the conversation guide, not the formal scored review — it's meant to be worked through together, out loud, live, with encouragement first on purpose.</p>
+
+    <p class="hint" style="margin-bottom:4px;"><b>Documents in this process:</b></p>
+    <ul class="hint" style="padding-left:20px; font-size:14px; margin-top:0;">
+      <li><b>staff-self-review.html</b> — the staff elder's own honest self-assessment, completed alone.</li>
+      <li><b>elder-assessment.html</b> — the coming-alongside elder's formal, signed evaluation; the official record for the personnel file.</li>
+      <li><b>elder-conversation-guide.html</b> — a shared, unscored discussion guide the two of them work through together, live.</li>
+    </ul>
+
+    <p class="hint" style="margin-bottom:4px;"><b>The steps:</b></p>
+    <ol class="hint" style="padding-left:20px; font-size:14px; margin-top:0;">
+      <li>The staff member completes <b>staff-self-review.html</b> on his own, honestly.</li>
+      <li>He clicks "Download progress (.json)" there — that just saves a small file to his computer, it doesn't send it anywhere by itself.</li>
+      <li>He sends that file to his coming-alongside elder himself — email, AirDrop, Slack, whatever's easiest.</li>
+      <li>The elder loads that file into <b>elder-assessment.html</b> as reference, before writing anything.</li>
+      <li>The two of them meet and work through <b>this document</b> together — live, unscored, encouragement first.</li>
+      <li>The elder completes his formal assessment in <b>elder-assessment.html</b>, informed by both the self-review and the conversation.</li>
+      <li>Both sign off at the bottom of <b>elder-assessment.html</b>, and it's printed to PDF for the personnel file.</li>
+      <li>At the 6-month mark, they revisit the Check-In section in <b>elder-assessment.html</b> for a lighter pulse — not a full redo.</li>
+    </ol>
+
+    <div class="row3">
+      <label class="field"><span class="lbl">Staff Member Name</span><input type="text" id="staffName"></label>
+      <label class="field"><span class="lbl">Elder Coming Alongside</span><input type="text" id="elderName"></label>
+      <label class="field"><span class="lbl">Conversation Date</span><input type="date" id="convDate"></label>
+    </div>
+  </div>
+
+  <div class="card" id="commentsCard">
+    <h2>You've Been Asked to Review This Draft</h2>
+    <p class="hint">This is a working draft of the annual staff elder review conversation guide. Select any text on this page and a small "💬 Comment" button will appear — click it to leave a note (e.g. "cut this question," "reword this," "add something about..."). Commented text gets a highlight you can click again to edit or delete. When you're done, enter your name below and click "Submit Feedback" — it goes straight to the pastor, no email needed.</p>
+    <label class="field"><span class="lbl">Your Name</span><input type="text" id="reviewerName" placeholder="So the pastor knows whose feedback this is"></label>
+    <button class="add-btn" id="submitFeedbackBtn">Submit Feedback</button>
+    <button class="add-btn" id="copyCommentsBtn" style="background:transparent; border:1px solid var(--line); color:var(--ink);">Copy All Comments Instead</button>
+    <div id="submitStatus" class="hint" style="margin-top:10px;"></div>
+    <textarea id="commentsOutput" readonly></textarea>
+  </div>
+
+  <div id="categories-container"></div>
+
+  <div class="card">
+    <h2>Bringing It Together</h2>
+    <p class="hint">A robust review holds both sides at once — say the good plainly, and be specific about where growth is needed. Both halves of this belong in the file.</p>
+    <label class="field"><span class="lbl">Fruit & strengths that came out of this conversation (be specific — help him actually see it)</span><textarea id="fruitObserved"></textarea></label>
+    <label class="field"><span class="lbl">Growth opportunities discussed (honest, specific, framed as opportunity)</span><textarea id="growthDiscussed"></textarea></label>
+    <label class="field"><span class="lbl">Next steps / follow-up commitments</span><textarea id="nextSteps"></textarea></label>
+  </div>
+
+  <div class="card">
+    <h2>Conversation Log</h2>
+    <div id="conversations-container"></div>
+    <button class="add-btn" onclick="addConversation()">+ Add Conversation</button>
+  </div>
+
+</main>
+
+<script>
+const CATEGORIES = [
+  {
+    title: "Encouragement & Fruit in Ministry",
+    hint: "Start here. Every review needs room for this, not just the areas that need work.",
+    questions: [
+      { text: "What's been particularly encouraging to you in ministry lately?" },
+      { text: "What fruit have you seen from your ministry during this period — changed lives, growth in others, answered prayers?" },
+      { text: "What are the things you do in ministry that you find most life-giving or encouraging, and why?" },
+      { text: "What are three things in the church you're most thankful for right now?" }
+    ]
+  },
+  {
+    title: "Personal Sustainability & Burnout",
+    questions: [
+      { text: "Is your spouse concerned about how you are doing — whether that's your physical condition, your attitude toward ministry, or feeling overly burdened or discouraged?" },
+      { text: "Is there any responsibility required of you that feels more like drudgery to complete?" },
+      { text: "Is there anything in ministry that you used to enjoy but now dread or just push through? Is there any aspect of ministry you once looked forward to but now mostly endure?", note: "Loss of joy in once-life-giving work is one of the earliest, most reliable burnout markers — often before exhaustion even sets in." },
+      { text: "How's your sleep? If it's not great, do you attribute that to lifestyle choices, or to the burden of ministry and anxiety related to shepherding? When you wake up, what feels heaviest on your mind?", note: "Two concrete, hard-to-fake proxies. Irritability and poor sleep both show up before someone would describe themselves as \"burned out.\"" },
+      { text: "What ministry responsibility would you feel relieved never to do again?" },
+      { text: "Who currently knows you well enough to recognize if you're not doing well?" },
+      { text: "Have you found yourself becoming more cynical, impatient, or emotionally numb toward the people you shepherd?" },
+      { text: "Are you having interpersonal issues with other elders or people on staff?" }
+    ]
+  },
+  {
+    title: "Family Impact",
+    questions: [
+      { text: "Would your family feel that you spend sufficient time with them?", note: "Forces him to answer for his family rather than about himself — harder to deflect, often more honest." },
+      { text: "What would your wife/family say they're not getting enough of from you right now?" },
+      { text: "Are the issues of ministry and church life given undue attention in your home?" },
+      { text: "Are you marked by a spirit of complaining or murmuring about ministry? If so, what are you most likely to have a begrudging disposition toward?" }
+    ]
+  },
+  {
+    title: "Administrative & Organizational Competency",
+    questions: [
+      { text: "Do you consistently respond to emails, messages, and requests in a timely manner? If not, what tends to keep you from responding?" },
+      { text: "Are deadlines generally met?" },
+      { text: "Where do you feel most disorganized?" },
+      { text: "Which meetings consistently produce meaningful decisions, and which could be eliminated?" },
+      { text: "What process or system under your oversight causes the most recurring frustration? What have you done to improve it?", note: "Looks for ownership instead of complaint." },
+      { text: "What have you intentionally delegated this year? What have you continued to hold onto that someone else could do?", note: "Healthy leaders develop capacity rather than accumulate responsibility." },
+      { text: "If you handed your ministry responsibilities to another qualified leader tomorrow, what would be most difficult for them because of how you've organized (or failed to organize) the work?", note: "Reveals documentation, communication, succession planning, and organizational health." },
+      { text: "Is there any ministry under your oversight that has been operating on \"autopilot\" for too long?", note: "Identifies neglected areas that may simply be coasting." },
+      { text: "What responsibility have you been avoiding because it feels difficult, awkward, or overwhelming?", note: "Every administrator has one — this surfaces it." },
+      { text: "What decision have you delayed longer than you should have?" },
+      { text: "If your ministry grew by 30% next year, what system would break first?" },
+      { text: "Where have you created unnecessary complexity?" },
+      { text: "Is there anything currently on your plate that takes real time but isn't bearing much fruit? What would it take to stop doing it?", note: "Distinguishes busyness from effectiveness — not everything worth doing once is worth continuing." },
+      { text: "If you had to cut 20% of your current responsibilities to focus more on your most effective ministry work, what would go first — and what's stopping you from cutting it now?", note: "Forces explicit trade-off thinking instead of just adding more onto an already full plate." },
+      { text: "What ministry metric or indicator are you currently paying attention to? Why?" },
+      { text: "What are the two greatest strengths and two greatest weaknesses of the ministries you oversee?", note: "Tests situational awareness and thoughtful evaluation." },
+      { text: "What is one administrative strength you've intentionally developed this year?" },
+      { text: "What is one administrative skill or leadership habit you intend to improve over the next year, and what is your plan for doing so?" }
+    ]
+  },
+  {
+    title: "Leadership Development (of Those Under Your Care)",
+    questions: [
+      { text: "Are you giving sufficient attention to developing the leaders under your care, or are you primarily focused on accomplishing tasks?", note: "Distinguishes managing ministry from shepherding leaders." },
+      { text: "If those who serve under your leadership were asked whether they receive clear communication, encouragement, and timely decisions, what do you think they would say?", note: "Similar to the family question — forces perspective-taking." },
+      { text: "Do you know the names, current challenges, and spiritual condition of the key leaders you supervise?", note: "Administration in the church is ultimately about people, not programs." },
+      { text: "Do the volunteers you manage know what success looks like in their roles?" },
+      { text: "Are there leaders you should be coaching more intentionally?" }
+    ]
+  },
+  {
+    title: "Teaching & Preaching Competency",
+    questions: [
+      { text: "As you evaluate your recent teaching, where have you seen the greatest growth, and where do you believe you most need to improve?", note: "Reveals self-awareness and coachability." },
+      { text: "Who regularly gives you honest, substantive feedback on your teaching, and how have you applied that feedback?", note: "Healthy teachers seek critique rather than avoid it." },
+      { text: "Do you believe your preparation has been diligent and unhurried, or have you found yourself relying too much on experience, old material, or last-minute preparation?", note: "Surfaces whether teaching has become routine rather than carefully prepared." },
+      { text: "Would those who hear you regularly say that your teaching is marked by both biblical faithfulness and pastoral application? Why or why not?", note: "Encourages the teacher to consider how listeners experience the ministry." },
+      { text: "As you look back over the past year, what evidence have you seen that your teaching has contributed to the spiritual maturity of the congregation?" },
+      { text: "What is one specific area of your teaching you are intentionally working to strengthen this year?" },
+      { text: "Do you find it discouraging to receive constructive feedback when you teach?" }
+    ]
+  }
+];
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderCategories(saved) {
+  const container = document.getElementById('categories-container');
+  container.innerHTML = '';
+  CATEGORIES.forEach((cat, ci) => {
+    const det = document.createElement('details');
+    det.className = 'category';
+    det.open = (ci === 0);
+    const savedCat = (saved && saved[ci]) || [];
+    const qHtml = cat.questions.map((q, qi) => {
+      const saved_q = savedCat[qi] || {};
+      return `
+        <div class="qblock" data-ci="${ci}" data-qi="${qi}">
+          <div class="qtext">${qi + 1}. ${escHtml(q.text)}</div>
+          ${q.note ? `<div class="qnote">${escHtml(q.note)}</div>` : ''}
+          <div class="qanswers">
+            <div><div class="lbl">His Reflection</div><textarea class="ans-staff">${escHtml(saved_q.staff || '')}</textarea></div>
+            <div><div class="lbl">Elder's Notes / Follow-Up</div><textarea class="ans-elder">${escHtml(saved_q.elder || '')}</textarea></div>
+          </div>
+        </div>`;
+    }).join('');
+    det.innerHTML = `
+      <summary>${cat.title} <span style="font-weight:400; font-size:13px; opacity:.75;">(${cat.questions.length})</span></summary>
+      <div class="category-body">
+        ${cat.hint ? `<div class="category-hint">${escHtml(cat.hint)}</div>` : ''}
+        ${qHtml}
+      </div>`;
+    container.appendChild(det);
+  });
+}
+
+function readCategories() {
+  return CATEGORIES.map((cat, ci) => {
+    return cat.questions.map((q, qi) => {
+      const block = document.querySelector(`.qblock[data-ci="${ci}"][data-qi="${qi}"]`);
+      return {
+        staff: block.querySelector('.ans-staff').value,
+        elder: block.querySelector('.ans-elder').value
+      };
+    });
+  });
+}
+
+function addConversation(data) {
+  data = data || {};
+  const container = document.getElementById('conversations-container');
+  const row = document.createElement('div');
+  row.className = 'conv-row';
+  row.innerHTML = `
+    <label class="field"><span class="lbl">Date</span><input type="date" class="conv-date" value="${escHtml(data.date||'')}"></label>
+    <label class="field"><span class="lbl">Staff Initials</span><input type="text" class="conv-staff" value="${escHtml(data.staff||'')}"></label>
+    <label class="field"><span class="lbl">Elder Initials</span><input type="text" class="conv-elder" value="${escHtml(data.elder||'')}"></label>
+    <button class="rm-btn" onclick="this.closest('.conv-row').remove()">Remove</button>
+  `;
+  container.appendChild(row);
+}
+function readConversations() {
+  return Array.from(document.querySelectorAll('#conversations-container .conv-row')).map(r => ({
+    date: r.querySelector('.conv-date').value,
+    staff: r.querySelector('.conv-staff').value,
+    elder: r.querySelector('.conv-elder').value
+  }));
+}
+
+const STATIC_FIELDS = ['staffName','elderName','convDate','fruitObserved','growthDiscussed','nextSteps'];
+
+function serialize() {
+  const out = { tool: 'elder-conversation-guide', savedAt: new Date().toISOString() };
+  STATIC_FIELDS.forEach(id => out[id] = document.getElementById(id).value);
+  out.categories = readCategories();
+  out.conversations = readConversations();
+  return out;
+}
+
+function restore(data) {
+  STATIC_FIELDS.forEach(id => { if (data[id] !== undefined) document.getElementById(id).value = data[id]; });
+  renderCategories(data.categories || []);
+  document.getElementById('conversations-container').innerHTML = '';
+  (data.conversations || []).forEach(c => addConversation(c));
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const data = serialize();
+  const name = (data.staffName || 'staff').replace(/[^a-z0-9]+/gi,'-');
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${name}-conversation-guide-${(data.convDate||'draft')}.json`;
+  a.click();
+});
+
+document.getElementById('loadFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      restore(data);
+    } catch (err) {
+      alert('Could not read that file as a saved guide: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('expandBtn').addEventListener('click', () => {
+  document.querySelectorAll('details.category').forEach(d => d.open = true);
+});
+document.getElementById('collapseBtn').addEventListener('click', () => {
+  document.querySelectorAll('details.category').forEach(d => d.open = false);
+});
+
+renderCategories();
+addConversation();
+
+let COMMENTS = [];
+let commentIdSeq = 0;
+let pendingRange = null;
+
+function escHtmlG(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function initCommenting() {
+  const addBtn = document.createElement('button');
+  addBtn.id = 'addCommentBtn';
+  addBtn.textContent = '💬 Comment';
+  document.body.appendChild(addBtn);
+
+  document.addEventListener('mouseup', (e) => {
+    if (e.target.nodeType !== 1) return;
+    if (e.target.closest('#addCommentBtn') || e.target.closest('.comment-popover')) return;
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) { addBtn.style.display = 'none'; return; }
+    const range = sel.getRangeAt(0);
+    const main = document.querySelector('main');
+    if (!main.contains(range.commonAncestorContainer)) { addBtn.style.display = 'none'; return; }
+    const text = sel.toString().trim();
+    if (!text) { addBtn.style.display = 'none'; return; }
+    pendingRange = range.cloneRange();
+    const rect = range.getBoundingClientRect();
+    addBtn.style.left = (rect.left + window.scrollX) + 'px';
+    addBtn.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    addBtn.style.display = 'block';
+  });
+
+  addBtn.addEventListener('click', () => {
+    if (!pendingRange) return;
+    const rect = addBtn.getBoundingClientRect();
+    addBtn.style.display = 'none';
+    openCommentPopover(pendingRange, rect, null);
+  });
+}
+
+function openCommentPopover(range, rect, existingMark) {
+  document.querySelectorAll('.comment-popover').forEach(p => p.remove());
+  const pop = document.createElement('div');
+  pop.className = 'comment-popover';
+  pop.style.left = Math.max(8, rect.left + window.scrollX) + 'px';
+  pop.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  const existingComment = existingMark ? COMMENTS.find(c => c.id === existingMark.dataset.commentId) : null;
+  pop.innerHTML = `
+    <textarea placeholder="Your comment...">${existingComment ? escHtmlG(existingComment.comment) : ''}</textarea>
+    <div class="btnrow">
+      ${existingMark ? '<button data-action="delete">Delete</button>' : ''}
+      <button data-action="cancel">Cancel</button>
+      <button data-action="save">Save</button>
+    </div>
+  `;
+  document.body.appendChild(pop);
+  const textarea = pop.querySelector('textarea');
+  textarea.focus();
+
+  pop.querySelector('[data-action="cancel"]').addEventListener('click', () => pop.remove());
+
+  pop.querySelector('[data-action="save"]').addEventListener('click', () => {
+    const val = textarea.value.trim();
+    if (!val) { pop.remove(); return; }
+    if (existingMark) {
+      const c = COMMENTS.find(c => c.id === existingMark.dataset.commentId);
+      if (c) c.comment = val;
+    } else {
+      const id = 'c' + (commentIdSeq++);
+      const mark = document.createElement('mark');
+      mark.className = 'commented';
+      mark.dataset.commentId = id;
+      try {
+        range.surroundContents(mark);
+      } catch (err) {
+        const contents = range.extractContents();
+        mark.appendChild(contents);
+        range.insertNode(mark);
+      }
+      mark.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        openCommentPopover(null, mark.getBoundingClientRect(), mark);
+      });
+      COMMENTS.push({ id, text: mark.textContent, comment: val });
+    }
+    pop.remove();
+    window.getSelection().removeAllRanges();
+  });
+
+  const delBtn = pop.querySelector('[data-action="delete"]');
+  if (delBtn) {
+    delBtn.addEventListener('click', () => {
+      COMMENTS = COMMENTS.filter(c => c.id !== existingMark.dataset.commentId);
+      const parent = existingMark.parentNode;
+      while (existingMark.firstChild) parent.insertBefore(existingMark.firstChild, existingMark);
+      parent.removeChild(existingMark);
+      pop.remove();
+    });
+  }
+}
+
+const GITHUB_REPO = "AICrazyMan5000/gcc-staff-elder-annual-review-feedback";
+const GITHUB_TOKEN = "PASTE_TOKEN_HERE"; // fine-grained PAT, scoped to only this repo, Issues: Read and write
+
+function compileComments() {
+  return COMMENTS.length
+    ? COMMENTS.map((c, i) => `${i+1}. "${c.text}"\n   -> ${c.comment}`).join('\n\n')
+    : '';
+}
+
+document.getElementById('copyCommentsBtn').addEventListener('click', () => {
+  const compiled = compileComments() || '(No comments yet — select some text above, then click the button that appears.)';
+  const output = document.getElementById('commentsOutput');
+  output.value = compiled;
+  output.style.display = 'block';
+  output.focus();
+  output.select();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(compiled).catch(() => {});
+  }
+});
+
+document.getElementById('submitFeedbackBtn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('submitStatus');
+  const name = document.getElementById('reviewerName').value.trim() || 'Anonymous';
+  const compiled = compileComments();
+  if (!compiled) {
+    statusEl.textContent = 'No comments yet — select some text above and leave at least one comment before submitting.';
+    return;
+  }
+  if (GITHUB_TOKEN === 'PASTE_TOKEN_HERE') {
+    statusEl.textContent = 'Submission isn\'t wired up yet — use "Copy All Comments Instead" for now.';
+    return;
+  }
+  const submitBtn = document.getElementById('submitFeedbackBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting…';
+  statusEl.textContent = '';
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: `Feedback — ${name} — ${new Date().toISOString().slice(0,10)}`,
+        body: compiled
+      })
+    });
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`GitHub responded ${res.status}: ${errBody}`);
+    }
+    submitBtn.textContent = 'Submitted ✓';
+    statusEl.textContent = 'Thank you — your feedback has been submitted.';
+  } catch (err) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit Feedback';
+    statusEl.textContent = 'Something went wrong submitting your feedback: ' + err.message + '. Please try "Copy All Comments Instead" and send it another way.';
+  }
+});
+
+initCommenting();
+</script>
+</body>
+</html>
