@@ -62,10 +62,14 @@
   .comment-popover .btnrow { display:flex; gap:6px; justify-content:flex-end; }
   .comment-popover button { font-size:12px; padding:5px 10px; border-radius:6px; cursor:pointer; }
   #commentsCard { border:1px dashed #b58a2e; background:rgba(181,138,46,.06); }
+  .review-feedback-box { margin-top:10px; padding:10px 12px; border:1px dashed #b58a2e; border-radius:8px; background:rgba(181,138,46,.08); }
+  .review-feedback-box .lbl { color:#8a6413; }
+  @media (prefers-color-scheme: dark) { .review-feedback-box .lbl { color:#e0b84d; } }
+  .review-feedback-box textarea { min-height:44px; }
   #commentsOutput { display:none; margin-top:10px; min-height:120px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; font-size:13px; }
 
   @media print {
-    .toolbar, .rm-btn, .add-btn, input[type=file], #addCommentBtn, .comment-popover, #commentsCard { display:none !important; }
+    .toolbar, .rm-btn, .add-btn, input[type=file], #addCommentBtn, .comment-popover, #commentsCard, .review-feedback-box { display:none !important; }
     mark.commented { background:none !important; border-bottom:none !important; }
     body { background:#fff; }
     .card, details.category { border:none; box-shadow:none; break-inside:avoid; }
@@ -119,16 +123,6 @@
     </div>
   </div>
 
-  <div class="card" id="commentsCard">
-    <h2>You've Been Asked to Review This Draft</h2>
-    <p class="hint">This is a working draft of the annual staff elder review conversation guide. Select any text on this page and a small "💬 Comment" button will appear — click it to leave a note (e.g. "cut this question," "reword this," "add something about..."). Commented text gets a highlight you can click again to edit or delete. When you're done, enter your name below and click "Submit Feedback" — it goes straight to the pastor, no email needed.</p>
-    <label class="field"><span class="lbl">Your Name</span><input type="text" id="reviewerName" placeholder="So the pastor knows whose feedback this is"></label>
-    <button class="add-btn" id="submitFeedbackBtn">Submit Feedback</button>
-    <button class="add-btn" id="copyCommentsBtn" style="background:transparent; border:1px solid var(--line); color:var(--ink);">Copy All Comments Instead</button>
-    <div id="submitStatus" class="hint" style="margin-top:10px;"></div>
-    <textarea id="commentsOutput" readonly></textarea>
-  </div>
-
   <div id="categories-container"></div>
 
   <div class="card">
@@ -143,6 +137,16 @@
     <h2>Conversation Log</h2>
     <div id="conversations-container"></div>
     <button class="add-btn" onclick="addConversation()">+ Add Conversation</button>
+  </div>
+
+  <div class="card" id="commentsCard">
+    <h2>You've Been Asked to Review This Draft</h2>
+    <p class="hint">This is a working draft of the annual staff elder review conversation guide. The main way to give feedback: type directly into the "Your Feedback on This Question" box under any question. If you have a thought about something that isn't a specific question (the intro text, a section heading, etc.), you can also select that text and a small "💬 Comment" button will appear — click it to leave a note there instead; commented text gets a highlight you can click again to edit or delete. When you're done, enter your name below and click "Submit Feedback" — it's submitted directly, no email needed.</p>
+    <label class="field"><span class="lbl">Your Name</span><input type="text" id="reviewerName" placeholder="So it's clear whose feedback this is"></label>
+    <button class="add-btn" id="submitFeedbackBtn">Submit Feedback</button>
+    <button class="add-btn" id="copyCommentsBtn" style="background:transparent; border:1px solid var(--line); color:var(--ink);">Copy All Feedback Instead</button>
+    <div id="submitStatus" class="hint" style="margin-top:10px;"></div>
+    <textarea id="commentsOutput" readonly></textarea>
   </div>
 
 </main>
@@ -247,6 +251,10 @@ function renderCategories(saved) {
           <div class="qanswers">
             <div><div class="lbl">His Reflection</div><textarea class="ans-staff">${escHtml(saved_q.staff || '')}</textarea></div>
             <div><div class="lbl">Elder's Notes / Follow-Up</div><textarea class="ans-elder">${escHtml(saved_q.elder || '')}</textarea></div>
+          </div>
+          <div class="review-feedback-box">
+            <div class="lbl">Your Feedback on This Question (optional)</div>
+            <textarea class="review-feedback" placeholder="Cut it, reword it, add something — anything you'd change"></textarea>
           </div>
         </div>`;
     }).join('');
@@ -444,16 +452,33 @@ function openCommentPopover(range, rect, existingMark) {
 }
 
 const GITHUB_REPO = "AICrazyMan5000/gcc-staff-elder-annual-review-feedback";
-const GITHUB_TOKEN = "PASTE_TOKEN_HERE"; // fine-grained PAT, scoped to only this repo, Issues: Read and write
+const GITHUB_TOKEN = "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"; // fine-grained PAT, scoped to only this repo, Issues: Read and write
+
+function readPerQuestionFeedback() {
+  const items = [];
+  document.querySelectorAll('.qblock').forEach(block => {
+    const fb = block.querySelector('.review-feedback');
+    const val = fb ? fb.value.trim() : '';
+    if (val) {
+      items.push({ text: block.querySelector('.qtext').textContent.trim(), comment: val });
+    }
+  });
+  return items;
+}
 
 function compileComments() {
-  return COMMENTS.length
-    ? COMMENTS.map((c, i) => `${i+1}. "${c.text}"\n   -> ${c.comment}`).join('\n\n')
-    : '';
+  const parts = [];
+  const perQuestion = readPerQuestionFeedback();
+  perQuestion.forEach(item => parts.push(`${item.text}\n   -> ${item.comment}`));
+  if (COMMENTS.length) {
+    if (perQuestion.length) parts.push('--- Other comments (highlighted text) ---');
+    COMMENTS.forEach(c => parts.push(`"${c.text}"\n   -> ${c.comment}`));
+  }
+  return parts.join('\n\n');
 }
 
 document.getElementById('copyCommentsBtn').addEventListener('click', () => {
-  const compiled = compileComments() || '(No comments yet — select some text above, then click the button that appears.)';
+  const compiled = compileComments() || '(No feedback yet — type into a question\'s feedback box, or select some text and click the button that appears.)';
   const output = document.getElementById('commentsOutput');
   output.value = compiled;
   output.style.display = 'block';
@@ -469,7 +494,7 @@ document.getElementById('submitFeedbackBtn').addEventListener('click', async () 
   const name = document.getElementById('reviewerName').value.trim() || 'Anonymous';
   const compiled = compileComments();
   if (!compiled) {
-    statusEl.textContent = 'No comments yet — select some text above and leave at least one comment before submitting.';
+    statusEl.textContent = 'No feedback yet — type into at least one question\'s feedback box before submitting.';
     return;
   }
   if (GITHUB_TOKEN === 'PASTE_TOKEN_HERE') {
